@@ -5,6 +5,6 @@ import com.whoz_in.domain.shared.BusinessException;
 public class InvalidAuthCredentialsException extends BusinessException {
 
     public InvalidAuthCredentialsException() {
-        super("2003", "아이디 혹은 비밀번호가 틀렸습니다.");
+        super("아이디 혹은 비밀번호가 틀렸습니다.");
     }
 }

@@ -4,6 +4,6 @@ import com.whoz_in.domain.shared.BusinessException;
 
 public class NotAuthMemberException extends BusinessException {
     public NotAuthMemberException() {
-        super("2006", "일반 로그인 정보가 없는 회원입니다.");
+        super("일반 로그인 정보가 없는 회원입니다.");
     }
 }

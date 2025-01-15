@@ -5,6 +5,6 @@ import com.whoz_in.domain.shared.BusinessException;
 public class NoMemberException extends BusinessException {
 
     public NoMemberException() {
-        super("2008", "존재하지 않는 멤버입니다.");
+        super("존재하지 않는 멤버입니다.");
     }
 }

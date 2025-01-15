@@ -9,6 +9,6 @@ import com.whoz_in.domain.shared.BusinessException;
 public class UserNotAuthenticationException extends BusinessException {
 
     protected UserNotAuthenticationException() {
-        super("1010", "유저 아이디가 없습니다");
+        super("유저 아이디가 없습니다");
     }
 }
