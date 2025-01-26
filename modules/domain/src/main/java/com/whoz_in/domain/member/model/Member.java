@@ -1,5 +1,9 @@
 package com.whoz_in.domain.member.model;
 
+import com.whoz_in.domain.badge.exception.AlreadyHasBadgeException;
+import com.whoz_in.domain.badge.model.BadgeId;
+import com.whoz_in.domain.member.event.MemberBadgeAdded;
+import com.whoz_in.domain.member.event.MemberBadgeChanged;
 import com.whoz_in.domain.member.event.MemberCreated;
 import com.whoz_in.domain.member.event.MemberPasswordChanged;
 import com.whoz_in.domain.member.event.MemberStatusMessageChanged;
@@ -7,7 +11,11 @@ import com.whoz_in.domain.member.exception.NotAuthMemberException;
 import com.whoz_in.domain.member.service.PasswordEncoder;
 import com.whoz_in.domain.shared.AggregateRoot;
 import com.whoz_in.domain.shared.Nullable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +31,7 @@ public final class Member extends AggregateRoot {
     @Getter private String statusMessage; //상태 메세지
     @Nullable private AuthCredentials authCredentials;
     @Nullable private OAuthCredentials oAuthCredentials;
+    private final Map<BadgeId, IsBadgeShown> badges;
 
     //일반 로그인이 아닐수도 있으므로 Optional
     public Optional<AuthCredentials> getAuthCredentials(){
@@ -34,16 +43,16 @@ public final class Member extends AggregateRoot {
     }
 
     //일반 회원가입
-    public static Member create(String name, Position mainPosition, int generation, AuthCredentials authCredentials){
-        return create(name, mainPosition, generation, authCredentials, null);
+    public static Member create(String name, Position mainPosition, int generation, AuthCredentials authCredentials, Set<BadgeId> badges){
+        return create(name, mainPosition, generation, authCredentials, null, new HashMap<>());
     }
     //소셜 회원가입
-    public static Member create(String name, Position mainPosition, int generation, OAuthCredentials oAuthCredentials){
-        return create(name, mainPosition, generation, null, oAuthCredentials);
+    public static Member create(String name, Position mainPosition, int generation, OAuthCredentials oAuthCredentials, Set<BadgeId> badges){
+        return create(name, mainPosition, generation, null, oAuthCredentials, new HashMap<>());
     }
 
     private static Member create(String name, Position mainPosition, int generation,
-            AuthCredentials authCredentials, OAuthCredentials oAuthCredentials){
+            AuthCredentials authCredentials, OAuthCredentials oAuthCredentials, Map<BadgeId, IsBadgeShown> badges){
         if (authCredentials == null && oAuthCredentials == null)
             throw new IllegalStateException("no auth and oauth");
         Member member = builder()
@@ -54,13 +63,14 @@ public final class Member extends AggregateRoot {
                 .statusMessage("")
                 .authCredentials(authCredentials)
                 .oAuthCredentials(oAuthCredentials)
+                .badges(badges)
                 .build();
         member.register(new MemberCreated(member));
         return member;
     }
 
     public static Member load(MemberId id, String name, Position mainPosition, int generation, String statusMessage,
-            AuthCredentials authCredentials, OAuthCredentials oAuthCredentials){
+            AuthCredentials authCredentials, OAuthCredentials oAuthCredentials, Map<BadgeId, IsBadgeShown> badges){
         return builder()
                 .id(id)
                 .name(name)
@@ -69,6 +79,7 @@ public final class Member extends AggregateRoot {
                 .statusMessage(statusMessage)
                 .authCredentials(authCredentials)
                 .oAuthCredentials(oAuthCredentials)
+                .badges(badges)
                 .build();
     }
 
@@ -83,5 +94,27 @@ public final class Member extends AggregateRoot {
         this.statusMessage = newStatusMessage;
         this.register(new MemberStatusMessageChanged(this.getId(), this.statusMessage));
     }
-    
+
+    public void changeBadgeShowOrHide(BadgeId badgeId) {
+        this.badges.computeIfPresent(badgeId, (id, isShown) -> isShown == IsBadgeShown.Y ? IsBadgeShown.N : IsBadgeShown.Y);
+        this.register(new MemberBadgeChanged(this.getId(), this.badges));
+    }
+
+    public Optional<IsBadgeShown> getBadgeStatus(BadgeId badgeId) {
+        return Optional.ofNullable(this.badges.get(badgeId));
+    }
+
+    public void addBadge(BadgeId badgeId) {
+        if (badges.containsKey(badgeId)) {
+            throw AlreadyHasBadgeException.EXCEPTION;
+        }
+        if (!badges.containsKey(badgeId)) {
+            badges.put(badgeId, IsBadgeShown.Y);
+            this.register(new MemberBadgeAdded(this.getId(), this.badges));
+        }
+    }
+
+    public Map<BadgeId, IsBadgeShown> getBadges() {
+        return Collections.unmodifiableMap(this.badges);
+    }
 }
