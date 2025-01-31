@@ -1,9 +1,7 @@
 services:
   main-api:
     container_name: whozin-main-api
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
+    image: whozin/whozin-main-api:latest #TODO: 태그
     env_file:
       - .env
     environment:
